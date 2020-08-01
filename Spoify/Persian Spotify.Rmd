@@ -24,7 +24,7 @@ library(cowplot)
 
 ```{r}
 
-songs_audio_plus_pop <- read_csv('songs_audio_plus_pop_06_04_2020_v9.csv')
+songs_audio_plus_pop <- read_csv('data/songs_audio_plus_pop_06_04_2020_v9.csv')
 songs_audio_plus_pop <- songs_audio_plus_pop %>%
   filter(
     !artist_name %in% c(
@@ -856,7 +856,7 @@ songs_audio_plus_pop_jitter %>%
 
 ```{r fig.width=20,fig.height=30}
 songs_audio_plus_pop <-
-  read_csv('songs_audio_plus_pop_06_04_2020_v9.csv')
+  read_csv('data/songs_audio_plus_pop_06_04_2020_v9.csv')
 songs_audio_plus_pop <- songs_audio_plus_pop %>%
   filter(
     !artist_name %in% c(
@@ -918,10 +918,12 @@ songs_audio_plus_pop %>%
     family = 'B Tehran',
     hjust = 0
   ) +
-  labs(title = 'محبوب ترین آهنگ ها و خواننده های ایرانی در اسپاتیفای',
-       subtitle = s_,
-       x = 'محبوبیت',
-       caption = 'منبع: اسپاتیفای\n  مصورسازی: محمد چناریان نخعی') +
+  labs(
+    title = 'محبوب ترین آهنگ ها و خواننده های ایرانی در اسپاتیفای',
+    subtitle = s_,
+    x = 'محبوبیت',
+    caption = 'منبع: اسپاتیفای\n  مصورسازی: محمد چناریان نخعی'
+  ) +
   scale_x_continuous(sec.axis = dup_axis()) +
   theme_tufte() +
   theme(
@@ -954,15 +956,16 @@ songs_audio_plus_pop %>%
       margin = ggplot2::margin(30, 0, 20, 0),
       size = 30
     ),
-    plot.caption = element_text(family ='B Mitra',
-                                  margin = ggplot2::margin(30, 0, 20, 20),
-                                      size = 20,
-                                  color = 'gray20') ,
+    plot.caption = element_text(
+      family = 'B Mitra',
+      margin = ggplot2::margin(30, 0, 20, 20),
+      size = 20,
+      color = 'gray20'
+    ) ,
     axis.title.y = element_blank(),
     plot.background = element_rect(fill = '#FCF0E1'),
     plot.margin = unit(c(1, 1, 1.5, 1.2), "cm")
   )
-
 
 
 
