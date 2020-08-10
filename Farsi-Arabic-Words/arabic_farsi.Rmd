@@ -1,0 +1,260 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+#install.packages('ggpage')
+#install.packages("ggwordcloud")
+#devtools::install_github('bbc/bbplot')
+library(tidyverse)
+library(ggpage)
+library(ggthemes)
+library(gganimate)
+library(wordcloud)
+library(scales)
+```
+
+```{r}
+
+all_poets <- read_csv('data/poetry_lang_word_df.csv')
+```
+```{r}
+library(extrafont)
+font_import()
+windowsFonts()
+loadfonts(device = "win")
+
+
+```
+
+```{r fig.height=11,fig.width=10,dpi = 2000}
+all_poets %>%
+  filter(lang %in% c('ar', 'fa')) %>%
+  count(poet, century, lang) %>%
+  pivot_wider(names_from = lang,
+              values_from  = n)  %>%
+  mutate(
+    ratio = round(ar / fa * 100, 2),
+    ratio = ar / fa,
+    poet = fct_reorder(poet, ratio),
+    period = case_when(
+      between(century, 3, 6) ~ 'سبک خراسانی',
+      between(century, 7, 9) ~ 'سبک عراقی',
+      between(century, 10, 13) ~ 'سبک هندی',
+      between(century, 14, 15) ~ 'دوران معاصر',
+    ),
+    period = factor(
+      period,
+      levels = c('سبک خراسانی', 'سبک عراقی', 'سبک هندی', 'دوران معاصر')
+    )
+  ) %>%
+  ggplot(aes(x = poet, y = ratio , color = period)) +
+  #geom_col(aes(fill = century ),alpha = 0.2)+
+  geom_point(size = 4) +
+  
+  geom_segment(aes(
+    y = 0,
+    yend = ratio,
+    x = poet,
+    xend = poet
+  ), size = 1) +
+  geom_text(
+    aes(
+      x = poet,
+      y = ratio  ,
+      label = scales::percent(ratio)
+    ),
+    size = 5,
+    nudge_y = .2,
+    family = 'B Mitra'
+  ) +
+  labs(
+    x = '',
+    y = '',
+    color = ':دوره',
+    title = 'نسبت کلمات به کار رفته با ریشه عربی در آثار مشاهیر ادبیات ایران'
+  ) +
+  scale_color_tableau() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  # scale_fill_tableau() +
+  coord_flip() +
+  facet_wrap( ~ period, scales = "free_y", ncol = 2) +
+  theme_tufte() +
+  theme(
+    text = element_text(family = 'B Mitra'),
+    #axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 12, color = 'gray'),
+    legend.title =  element_text(size = 20),
+    legend.text = element_text(
+      family = 'B Mitra',
+      size = 15,
+      margin = margin(0, 20, 0, 0),
+      
+    ),
+    plot.title = element_text(
+      family = 'B Nazanin',
+      face = "bold",
+      color = 'gray',
+      size = 26,
+      margin = margin(0, 20, 20, 0),
+      hjust = -0.5,
+      vjust = -0.5
+    ),
+    legend.position = 'none',
+    #legend.title.align = 0.5,
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    strip.text = element_text(
+      family = 'B Mitra',
+      color = 'gray80',
+      size = 18 ,
+      margin = margin(1, 0, 1, 0, "cm")
+    ),
+    plot.background = element_rect(fill = "black", color = "black"),
+    panel.background = element_rect(fill = "black", color = "black"),
+    panel.border = element_rect(fill = NA, color = NA)
+  )
+```
+```{r fig.height=20,fig.width=20}
+sample_poets_df <- read_csv('data/sample_poets_df.csv')
+
+plotcolors <-  c('ar' = 'indianred', 'fa' = 'gray76')
+poets_list <- sample_poets_df %>%
+  distinct(poet) %>%
+  pull(poet)
+
+create_ggpage <- function(p) {
+  df <- sample_poets_df %>%
+    filter(poet == p)
+  df %>%
+    ggpage_build(align = 'both', lpp = 20) %>%
+    left_join(df, by = 'word') %>%
+    filter(!is.na(lang)) %>%
+    filter(
+      !is.na(word)
+}
+
+
+
+ggpage_df <- create_ggpage(poets_list[1])
+
+for (p in poets_list[2:12]) {
+  ggpage_df <- bind_rows(ggpage_df, create_ggpage(p))
+}
+
+
+
+ggpage_df %>%
+  mutate(poet = fct_reorder(poet, century)) %>%
+  ggpage_plot(aes(fill = lang)) +
+  
+  labs(title = 'ریشه زبانی کلمات به کار رفته در آثار مشاهیر ادب و زبان فارسی', fill = '') +
+  scale_fill_manual(values = plotcolors,
+                    guide = 'legend' ,
+                    labels = c('عربی', 'فارسی')) +
+  
+  facet_wrap(~ poet, nrow = 3) +
+  
+  #heme_dark() +
+  theme(
+    strip.text = element_text(
+      family = 'B Mitra',
+      size = 26,
+      face = "bold",
+      margin = margin(1, 1, 1, 1, "cm"),
+      color = 'white'
+    ),
+    #strip.background = element_rect(fill ='#003366'),
+    legend.position = 'top',
+    legend.text = element_text(
+      family = 'B Mitra',
+      size = 23,
+      margin = margin(10, 10, 10, 10)
+    ),
+    panel.spacing = unit(1, "points"),
+    plot.title = element_text(
+      family = 'B Mitra',
+      face = "bold",
+      size = 33,
+      margin = margin(30, 0, 30, 0),
+      hjust = 0.5
+    ),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.background = element_rect(fill = '#000F2B'),
+    #panel.background = element_rect(fill = '#000F2B'),
+    panel.border = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+  )
+```
+
+
+```{r fig.height=20,fig.width=20}
+library(reshape2)
+all_poets %>%
+  filter(poet == poets_list[12]) %>%
+  count(word, lang) %>%
+  mutate(lang = case_when(lang == 'ar' ~ 'عربی',
+                          lang == 'fa' ~ 'فارسی')) %>%
+  acast(word ~ lang, value.var = "n", fill = 0) %>%
+  comparison.cloud(
+    family = 'B Mitra',
+    title.bg.colors = c("gray90", "gray90"),
+    title.colors = c("#E55934", "#9BC53D"),
+    colors = c("#E55934", "#9BC53D"),
+    title.size = 6,
+    max.words = 400,
+    scale = c(5, 3)
+  )
+```
+```{r fig.height=20,fig.width=20}
+all_poets %>%
+  filter(poet == poets_list[2]) %>%
+  count(word, lang) %>%
+  mutate(lang = case_when(lang == 'ar' ~ 'عربی',
+                          lang == 'fa' ~ 'فارسی')) %>%
+  filter((lang == 'عربی'  & n<6)| lang == 'فارسی') %>%
+  acast(word ~ lang, value.var = "n", fill = 0) %>% 
+  comparison.cloud(
+    family = 'B Mitra',
+    title.bg.colors = c("gray90", "gray90"),
+    title.colors = c("#E55934", "#9BC53D"),
+    colors = c("#E55934", "#9BC53D"),
+    title.size = 6,
+    max.words = 300,
+    scale = c(5, 3)
+  )
+```
+
+
+```{r}
+ggpage_df %>% 
+    ggpage_plot(aes(fill = lang)) + 
+  scale_fill_manual(values =plotcolors,guide = 'legend' )+
+  #labs(title = '',fill = 'زبان') +
+    labs(title = " {closest_state}") +
+transition_states(
+    poet,
+    transition_length = 100,
+    state_length = 100
+    )  +
+  theme(strip.text = element_text(family = 'B Mitra',
+                                  size = 20),
+    legend.position = 'top',
+    legend.text = element_text(     
+      family = 'Montserrat',
+      size = 20,
+      margin = margin(0, 20, 0, 0)
+      ))
+
+```
+
