@@ -1,11 +1,11 @@
 ---
-title: "R Notebook"
+title: "Corona In the Netherlands"
 output: html_notebook
 ---
 
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(lubridate)
 library(zoo)
@@ -55,7 +55,7 @@ custom_theme <- theme_tufte() +
     panel.grid.major.y =  element_line(linetype = 'dashed', color = 'gray60'),
     axis.title.x = element_blank(),
     axis.title.y = element_blank()
-
+    
   )
 
 theme_set(custom_theme)
@@ -64,79 +64,107 @@ theme_set(custom_theme)
 
 
 
-
+### Download Data 
+Source: CoronaWatchNL
+The link to the dataset might change. So, please check the github account for more infomration.
 
 ```{r}
 nl_data <-read_csv('https://raw.githubusercontent.com/J535D165/CoronaWatchNL/master/data/rivm_corona_in_nl.csv')
 nl_data
 ```
 ```{r}
-cities <- c('Tilburg','Breda','Utrecht','Amsterdam','Rotterdam',
-            'Den Haag', 'Enschede','Delft','Eindhoven','Nijmegen',
-            'Maastricht','Zwolle')
+cities <- c(
+  'Tilburg',
+  'Breda',
+  'Utrecht',
+  'Amsterdam',
+  'Rotterdam',
+  'Den Haag',
+  'Enschede',
+  'Delft',
+  'Eindhoven',
+  'Nijmegen',
+  'Maastricht',
+  'Zwolle'
+)
 ```
 
-
+### Preprocessing
 
 ```{r}
-
-cities_ordered <- nl_data %>% 
-    filter(Gemeentenaam %in% cities) %>% 
-  group_by(Gemeentenaam) %>% 
-  summarize(sum_aantal = sum(Aantal)) %>% 
+cities_ordered <- nl_data %>%
+  filter(Gemeentenaam %in% cities) %>%
+  group_by(Gemeentenaam) %>%
+  summarize(sum_aantal = sum(Aantal)) %>%
   arrange(desc(sum_aantal)) %>%
-  select(Gemeentenaam) %>% 
-  pull() 
+  select(Gemeentenaam) %>%
+  pull()
 
 cities_ordered
-cities_ordered <- factor(cities,levels = cities_ordered)
+cities_ordered <- factor(cities, levels = cities_ordered)
 
 
-cities_df <- nl_data %>% 
-  filter(Gemeentenaam %in% cities_ordered) %>% 
-  mutate(Datum = as_date(Datum)) %>% 
+cities_df <- nl_data %>%
+  filter(Gemeentenaam %in% cities_ordered) %>%
+  mutate(Datum = as_date(Datum)) %>%
   rename(City = Gemeentenaam)
 
 
-
-
-dates <- cities_df %>% 
-  select(Datum) %>% 
-  distinct(Datum) %>% 
+dates <- cities_df %>%
+  select(Datum) %>%
+  distinct(Datum) %>%
   pull()
 
 
-complete_grid <- expand.grid(dates,cities, KEEP.OUT.ATTRS = TRUE, stringsAsFactors = TRUE)
-names(complete_grid) <- c('Datum','City')
-nl_ds <- complete_grid %>% left_join(cities_df %>% select(Datum,City,Aantal) ,by=c('Datum','City'))#%>% 
-  #
+complete_grid <-
+  expand.grid(dates,
+              cities,
+              KEEP.OUT.ATTRS = TRUE,
+              stringsAsFactors = TRUE)
+names(complete_grid) <- c('Datum', 'City')
+nl_ds <-
+  complete_grid %>% left_join(cities_df %>% select(Datum, City, Aantal) , by =
+                                c('Datum', 'City'))#%>%
+#
 
 
-nl_ds_vis <- nl_ds %>% 
-  arrange(Datum,City) %>% 
-  group_by(Datum,City) %>% 
-  mutate(Aantal = as.integer(Aantal ),
+nl_ds_vis <- nl_ds %>%
+  arrange(Datum, City) %>%
+  group_by(Datum, City) %>%
+  mutate(Aantal = as.integer(Aantal),
          
-  Aantal=na.locf0(Aantal)) %>% 
+         Aantal = na.locf0(Aantal)) %>%
   replace(is.na(.), 0)
 ```
 
-
+### Visualization
 
 ```{r fig.height=25,fig.width=20}
 
-nl_ds_vis %>% 
-  ggplot(aes(Datum,Aantal,color = City,fill = City)) +
-  geom_line(color = 'indianred',size = 1.5,alpha = 1) +
-  geom_point(color = 'indianred',size = 3) +
-  gghighlight( use_direct_label = FALSE,unhighlighted_params = list(size = 1.5,width = 0.5,color ='#F6DAB4',alpha  = 0.7)) +
-  facet_wrap(~fct_reorder(City,-Aantal),ncol = 3 ) +
-  labs(title =  'COVID-19 in The Netherlands',
-       subtitle  = 'The red line shows the total number of people who have been tested positive for Covid-19 in a specific Dutch city.\nThe orange lines give a comparative view of trends and the number of Covid-19 cases in other Dutch cities.',
-       caption = 'Source: RIVM\n
+nl_ds_vis %>%
+  ggplot(aes(Datum, Aantal, color = City, fill = City)) +
+  geom_line(color = 'indianred',
+            size = 1.5,
+            alpha = 1) +
+  geom_point(color = 'indianred', size = 3) +
+  gghighlight(
+    use_direct_label = FALSE,
+    unhighlighted_params = list(
+      size = 1.5,
+      width = 0.5,
+      color = '#F6DAB4',
+      alpha  = 0.7
+    )
+  ) +
+  facet_wrap( ~ fct_reorder(City, -Aantal), ncol = 3) +
+  labs(
+    title =  'COVID-19 in The Netherlands',
+    subtitle  = 'The red line shows the total number of people who have been tested positive for Covid-19 in a specific Dutch city.\nThe orange lines give a comparative view of trends and the number of Covid-19 cases in other Dutch cities.',
+    caption = 'Source: RIVM\n
        Data: https://github.com/J535D165/CoronaWatchNL\n
-       Visualization: mcnakhaee.com') +
-  theme(legend.position ='none') 
+       Visualization: mcnakhaee.com'
+  ) +
+  theme(legend.position = 'none') 
   
 ```
 
