@@ -42,8 +42,3 @@
 
 </p>
 
-<p align="center">
-
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Farsi-Arabic-Words/imgs/percent_plot.png" width="500" height = "900">
-
-</p>
