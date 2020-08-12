@@ -25,7 +25,7 @@
 
 <p align="center">
 
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Spoify/imgs/audio_features.jpg" width="600" height = "750">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Spoify/imgs/audio_features.jpg" width="600" height = "850">
 
 <img src="https://github.com/mcnakhaee/data-stories/blob/master/Spoify/imgs/popularity.png" width="600" height = "750">
 
@@ -44,6 +44,6 @@
 
 <p align="center">
 
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Farsi-Arabic-Words/imgs/percent_plot.png" width="600" height = "800">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Farsi-Arabic-Words/imgs/percent_plot.png" width="500" height = "900">
 
 </p>
