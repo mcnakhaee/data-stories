@@ -1,0 +1,1302 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(widyr)
+library(delgosha)
+library(gghighlight)
+library(ggbump)
+library(geofacet)
+library(waffle)
+library(ggstream)
+library(tidymodels)
+library(nnet)
+library(grid)
+library(cowplot)
+library(ggthemes)
+library(ggrepel)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+import_all_fonts()
+extrafont::loadfonts(device="win")
+myFont <- "Poppins Light"
+windowsFonts(`Poppins Light`  = myFont)
+myFont <- 'Rubik'
+windowsFonts(Rubik  = myFont)
+
+
+caption = 'مصورسازی: محمد چناریان نخعی/منبع: جادی نت'
+```
+
+
+### Load datasets
+```{r message=FALSE, warning=FALSE}
+grid <- read_csv('data/iran_provinces.csv')
+
+data_94_98 <- read_csv('data/data_94_98.csv')
+
+```
+
+
+
+
+
+### Programming languages
+
+```{r}
+levels_salary <- c(
+  "زیر یک میلیون",
+  "یک تا دو میلیون",
+  "دو تا سه و نیم میلیون",
+  "سه و نیم تا پنج میلیون",
+  "پنج تا هفت میلیون",
+  "هفت تا ده میلیون"   ,
+  "ده تا سیزده",
+  "بالای سیزده" ,
+  "بالای بیست"   ,
+  "به ارزهای خارجی، زیر ۵۰۰۰ یورو",
+  "به ارزهای خارجی، بالای ۵۰۰۰ یورو"
+  
+)
+
+data_94_98 <- data_94_98 %>% 
+  mutate(salary = if_else(str_detect(salary,'۱۵۰۰'),'به ارزهای خارجی، زیر ۵۰۰۰ یورو',salary),
+         salary = if_else(str_detect(salary,'۳۰۰۰'),'به ارزهای خارجی، زیر ۵۰۰۰ یورو',salary),
+         salary = fct_relevel(salary,levels_salary))
+
+
+prog_lang_df <- data_94_98 %>% 
+  filter(programming_languages!= c('',' '),
+         !str_detect(programming_languages,'ک')) %>% 
+  mutate(programming_languages_tmp = programming_languages) %>% 
+  separate_rows(programming_languages,sep = ';') %>% 
+  separate_rows(programming_languages,sep = ',') %>% 
+  separate_rows(programming_languages_tmp,sep = ',') %>% 
+  separate_rows(programming_languages_tmp,sep = ',') %>% 
+  mutate(programming_languages = str_trim(programming_languages),
+         programming_languages = if_else(programming_languages =='c','C',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),'objective'),'Objective-c',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),'python'),'Python',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('+')),'C++',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('#')),'C#',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('#')),'C#',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('javascript')),'Java Script',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('c ')),'C',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed(' c')),'C',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('typescript')),'Typescript',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('dart')),'Dart',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('rust')),'Rust',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('basic')),'Visual Basic',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('html')),'HTML',programming_languages),
+         programming_languages = if_else(str_detect(str_to_lower(programming_languages),stringr::fixed('css')),'CSS',programming_languages)) %>% 
+ mutate(programming_languages_tmp = str_trim(programming_languages_tmp),
+        programming_languages_tmp = if_else(programming_languages_tmp =='c','C',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),'objective'),'Objective-c',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),'python'),'Python',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('+')),'C++',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('#')),'C#',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('#')),'C#',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('javascript')),'Java Script',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('basic')),'Visual Basic',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('c ')),'C',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed(' c')),'C',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('typescript')),'Typescript',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('dart')),'Dart',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('rust')),'Rust',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('basic')),'Visual Basic',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('html')),'HTML',programming_languages_tmp),
+         programming_languages_tmp = if_else(str_detect(str_to_lower(programming_languages_tmp),stringr::fixed('css')),'CSS',programming_languages_tmp))
+```
+
+
+
+#### Netowrk Analysis
+
+```{r fig.height=14,fig.width=14}
+### Network data
+pair_count <- prog_lang_df %>%
+  filter(year == 1398) %>%
+  count(item1 = programming_languages, item2 = programming_languages_tmp) %>%
+  filter(n > 1) %>%
+  mutate(from = item1, to = item2) %>%
+  select(from, to, n) %>%
+  filter(from != to) %>%
+  as_tbl_graph(directed = FALSE)
+
+
+
+graph <- ggraph(pair_count, layout = "kk", ) +
+  geom_edge_link(aes(
+    edge_width = n,
+    alpha = n,
+    colour = n
+  )) +
+  geom_node_label(
+    aes(label = name),
+    size = 4,
+    repel =  TRUE,
+    family = 'Rubik',
+    color = '#540b0e',
+    fill = '#F4F1DE'
+  ) +
+  geom_node_point(size = 5,
+                  color = '#540b0e',
+                  alpha = 0.8) +
+  labs(
+    title = 'برنامه نویسان و توسعه دهندگان ایرانی از چه زبانهای برنامه نویسی در کنار هم استفاده می کنند؟',
+    x = '',
+    y = '',
+    #subtitle = 'در نمودار زیر می توانید ببینید که بر اساس نظرسنجی سالانه توسعه دهندط توسعه دهندگان در کنار هم مورد استفاده قرار می گیرند.',
+    caption = caption
+  ) +
+  scale_edge_colour_gradientn(colours =  c('#d62828',
+                                           '#2a9d8f',
+                                           '#e9c46a',
+                                           '#f4a261',
+                                           '#e76f51')) +
+  theme_graph() +
+  theme_farsh_fa(subtitle_size  = 30, plot_title_size = 40) +
+  theme(
+    legend.position = 'none',
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+
+graph
+```
+
+##### Top Programming Languages
+```{r}
+top_langs <- prog_lang_df %>%
+    filter(year == 1398) %>% 
+  count(programming_languages,sort = TRUE) %>% 
+  filter(n > 24) %>% 
+  pull(programming_languages)
+```
+
+
+
+```{r fig.height=15,fig.width=10,dpi=300}
+prog_lang_df %>%
+  filter(year == 1398) %>%
+  filter(programming_languages %in%  top_langs[1:24], !is.na(tab_space)) %>%
+  group_by(programming_languages, tab_space) %>%
+  summarise(n =  n()) %>%
+  mutate(freq = n / sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x = 1, y = freq)) +
+  geom_col(aes(width = 1, fill = as.factor(tab_space)),
+           stat = "identity",
+           alpha = 0.7) +
+  coord_polar(theta = "y") +
+  facet_wrap(~ programming_languages, ncol = 4) +
+  scale_fill_manual(values = c('#2ec4b6',
+                               '#e71d36',
+                               '#ff9f1c',
+                               '#011627')) +
+  labs(
+    x = '',
+    y = '',
+    title = 'تب یا اسپیس؟',
+    fill = '',
+    subtitle = 'نمودار زیر به ما نشان می دهد که برنامه نویس ها در زبان های برنامه نویسی مختلف به چه نسبت از تب یا اسپیس می کنند',
+    caption = caption
+  ) +
+  theme_farsh_fa() +
+  theme(
+    panel.spacing.x = unit(20, "pt"),
+    panel.spacing.y = unit(10, "pt"),
+    plot.margin = margin(25, 30, 25, 30),
+    panel.grid.major  = element_blank(),
+    panel.grid.minor  = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    plot.subtitle = element_text(margin = margin(b = 20)),
+    strip.text = element_text(family = 'Rubik', size = 12)
+  )
+```
+
+#### Salary Proportations
+```{r fig.height=25,fig.width=15}
+prog_lang_df %>%
+  filter(year == 1398) %>%
+  group_by(programming_languages, salary) %>%
+  summarise(n =  n()) %>%
+  mutate(freq = n / sum(n)) %>% #View()
+  ungroup() %>%
+  filter(programming_languages %in% top_langs[1:24]) %>% #View()
+  ggplot(aes(fill = salary, values = freq)) +
+  geom_waffle(
+    n_rows = 10,
+    size = 0.5,
+    make_proportional = TRUE,
+    color = '#F4F1DE',
+    alpha = 0.8,
+    flip = TRUE
+  ) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  scale_fill_manual(
+    values = c(
+      '#eaac8b',
+      "#f9c74f",
+      "#f8961e",
+      "#f3722c",
+      "#f94144",
+      "#90be6d",
+      "#43aa8b",
+      "#2ec4b6",
+      '#90e0ef',
+      "#048ba8",
+      '#2c699a',
+      '#54478c',
+      '#2a9d8f'
+    )
+  ) +
+  facet_wrap( ~ programming_languages, ncol = 4) +
+  labs(
+    x = '',
+    title = 'توسعه دهندگان زبان های برنامه نویسی مختلف چه حقوقی دریافت می کنند؟',
+    fill = '',
+    subtitle = 'در این نمودار می توانید ببینید که نسبت حقوق دریافتی توسعه دهندگان به تفکیک زبان برنامه نویسی به چه صورت است.',
+    caption = caption
+  ) +
+  theme_farsh_fa() +
+  theme(
+    strip.text = element_text(family = 'Rubik', size = 17),
+    legend.text = element_text(size = 13),
+    plot.title = element_text(size = 23, margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 18, margin = margin(b = 10))
+  )
+
+
+
+```
+
+#### Salary per provinces
+```{r fig.height=20,fig.width=30,dpi = 300}
+data_94_98 %>%
+  filter(!is.na(province_work),
+         year == 1398) %>%
+  mutate(name_farsi = province_work,
+         year = as.integer(year)) %>%
+  group_by(name_farsi) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  group_by(name_farsi, salary) %>%
+  summarize(n = n(),) %>%
+  mutate(n = n * 100 / sum(n)) %>%
+  ggplot(aes(x = salary, y = n)) +
+  geom_col(fill = '#f94144', alpha = 0.7) +
+  coord_flip() +
+  facet_geo( ~ name_farsi, grid = grid, scales = 'free_y') +
+  labs(
+    x = '',
+    y = '',
+    title = 'نسبت حقوق دریافتی برنامه نویس ها و مدیران سیستم در سال 1398 استان های کشور',
+    color = '',
+    caption = caption
+  ) +
+  theme_farsh_fa(
+    plot_title_size = 70,
+    subtitle_size = 20,
+    strip_text_size = 17,
+    base_size = 15
+  ) +
+  theme(
+    legend.text = element_text(size = 15),
+    plot.title = element_text(size = 30),
+    plot.caption = element_text(size = 15),
+    axis.text = element_text(size = 17)
+  )
+```
+
+```{r fig.height=20,fig.width=20}
+data_94_98 %>%
+  filter(!is.na(province_work),
+         year == 1398) %>%
+  mutate(name_farsi = province_work,
+         year = as.integer(year)) %>%
+  group_by(name_farsi) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  group_by(name_farsi, age) %>%
+  summarize(n = n(),) %>%
+  mutate(n = n * 100 / sum(n)) %>%
+  ggplot(aes(x = 1, y = n)) +
+  geom_col(aes(width = 1, fill = as.factor(age)),  stat = "identity") +
+  scale_fill_manual(values = c('#011627','#ff9f1c','#2ec4b6','#e71d36','#fdfffc','#43aa8b'
+  )) +
+  coord_polar(theta = "y") +
+  
+  
+  facet_geo( ~ name_farsi, grid = grid) +
+  labs(
+    x = '',
+    y = '',
+    title = 'سن برنامه نویس ها و مدیران سیستم به تفکیک استان های کشور در سال 1398',
+    fill = '',
+    caption = caption
+  ) +
+  theme_farsh_fa(
+    plot_title_size = 70,
+    subtitle_size = 20,
+    strip_text_size = 14,
+    base_size = 10
+  ) +
+  theme(
+    legend.text = element_text(size = 15,margin = margin(b = 8)),
+    plot.title = element_text(size = 30,margin = margin(b = 40)),
+    plot.caption = element_text(size = 15),
+    axis.text = element_text(size = 17),
+    panel.grid.major  = element_blank(),
+    panel.grid.minor  = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+```
+
+
+```{r fig.height=20,fig.width=20,dpi = 300}
+data_94_98 %>% 
+  filter(!is.na(experience),
+         year== 1398) %>% 
+  mutate(name_farsi = province_work,
+       year = as.integer(year)) %>% 
+  group_by(name_farsi) %>% 
+  mutate(n_obs = n()) %>% 
+  ungroup() %>% 
+  group_by(name_farsi,experience) %>% 
+  summarize(n = n(),
+            ) %>% 
+  mutate(n = n*100/sum(n) ) %>% 
+  #ggplot(aes(x = experience,y = n)) +
+  ggplot(aes(x = 1, y = n)) +
+  geom_col(aes(width = 1, fill = as.factor(experience)),  stat = "identity") +
+  scale_fill_manual( values = c('#011627','#ff9f1c','#2ec4b6','#e71d36','#fdfffc','#43aa8b')) + 
+  coord_polar(theta = "y") +
+
+  facet_geo(~name_farsi,grid = grid) +
+  labs(x = '',
+       y = '',
+       title = 'میزان تجربه برنامه نویس ها و مدیران سیستم به تفکیک استان های کشور در سال 1398',
+       color = '',
+       fill = '',
+       caption = caption
+       ) +
+  theme_farsh_fa(plot_title_size = 70,subtitle_size = 20,strip_text_size = 15,base_size = 9) +
+  theme(legend.text = element_text(size = 15),
+        plot.title = element_text(size = 30,margin = margin(b = 30)),
+        plot.caption = element_text(size = 15),
+        axis.text= element_text(size = 17),
+        panel.grid.major  = element_blank(),
+        panel.grid.minor  = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank())
+```
+
+
+### Trends
+
+#### Porgramming languages
+
+```{r fig.height=15,fig.width=24}
+df <- data_94_98 %>%
+  group_by(year) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  filter(!str_detect(programming_languages, 'ک')) %>%
+  filter(programming_languages != ' ') %>%
+  filter(programming_languages != '') %>%
+  separate_rows(programming_languages, sep = ';') %>%
+  separate_rows(programming_languages, sep = ',') %>%
+  mutate(
+    programming_languages = str_trim(programming_languages),
+    programming_languages = if_else(
+      str_detect(str_to_lower(programming_languages), 'javascript'),
+      'Java Script',
+      programming_languages
+    )
+  ) %>%
+  group_by(year, programming_languages) %>%
+  summarise(freq =  n() / mean(n_obs)) %>%
+  ungroup() %>%
+  filter(programming_languages %in%  top_langs[1:12])
+
+
+
+
+ggplot(data = df, aes(year, freq, color = programming_languages)) +
+  geom_point(size = 8, alpha = 0.8) +
+  geom_text(
+    data = df %>% filter(year == min(year)),
+    aes(x = year - 0.1 , label = programming_languages),
+    size = 7,
+    hjust = 1,
+    family = 'Rubik'
+  ) +
+  geom_text(
+    data = df %>% filter(year == max(year)),
+    aes(x = year + 0.1 , label = programming_languages),
+    size = 7,
+    hjust = 0,
+    family = 'Rubik'
+    
+  ) +
+  geom_bump(size = 5,
+            smooth = 100,
+            alpha = 0.9) +
+  coord_cartesian(clip = "off") +
+  
+  scale_color_manual(
+    values = c(
+      '#d62828',
+      '#2a9d8f',
+      '#e9c46a',
+      '#f4a261',
+      '#e76f51',
+      '#fe938c',
+      '#e6b89c',
+      '#840032',
+      '#00b4d8',
+      '#4281a4',
+      '#06d6a0',
+      'black'
+    )
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = 'نسبت کاربران زبان های برنامه نویسی مختلف بین سال های 1394 تا 1398',
+    x = '',
+    y = 'درصد',
+    caption = caption
+  ) +
+  theme_farsh_fa(base_size = 25) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = 'none',
+    plot.caption = element_text(size = 17),
+  )
+```
+
+#### Database Trends
+
+```{r fig.height=15,fig.width=20}
+df_db <- data_94_98 %>% 
+  filter(databases != ' ',
+         !is.na(databases)) %>%
+
+  group_by(year) %>% 
+  mutate(n_obs =n()) %>% 
+  ungroup() %>% 
+  #filter(!str_detect(databases,'ک')) %>% 
+  #filter(databases!= ' ') %>% 
+  #filter(databases!= '') %>% 
+  separate_rows(databases,sep = ';') %>% 
+  separate_rows(databases,sep = ',') %>%
+  filter(!str_detect(databases, stringr::fixed('...)')))%>% 
+  mutate( databases = str_trim(databases),
+    databases = if_else(str_detect(str_to_lower(databases),'mongo'),'MongoDB',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'postgresql'),'PostgreSQL',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'sqlite'),'SQLite',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'ms-sql'),'MS-SQL',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'hadoop'),'Hadoop',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'oracle'),'Oracle',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'redis'),'Redis',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'realm'),'Realm',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'sqlserver'),'MS-SQL',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'elasticsearch'),'Elasticsearch',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'cassandra'),'Cassandra',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'neo4j'),'Neo4j',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'mysql'),'MySQL/MariaDB',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'sql server'),'MS-SQL',databases),
+    databases = if_else(str_detect(str_to_lower(databases),'sql server'),'MS-SQL',databases),
+    databases = if_else(is.na(databases),"No Database",databases)
+    ) %>% 
+  add_count(databases) %>% 
+  filter(n > 50) %>% 
+  group_by(year,databases) %>% 
+  summarise(freq =  n()/n_obs) %>%   
+  ungroup() %>% 
+  
+  filter( databases  != "No Database",!str_detect(databases,'Other')) 
+
+top_dbs <- df_db %>% 
+  filter(year == 1398) %>% 
+  count(databases,sort = TRUE) %>% 
+  slice(1:9) %>% 
+  pull(databases)
+
+df_db <- df_db %>% 
+  filter(databases %in% top_dbs) %>% 
+  group_by(year,databases) %>% 
+  summarize(freq = mean(freq)) %>% 
+  ungroup()
+ggplot(data = df_db, aes(year, freq, color = databases)) +
+  geom_point(size = 7,alpha = 0.8) +
+  geom_text_repel(
+    data = df_db %>% filter(year == max(year)),
+    aes(x = year + 0.3 , label = databases),
+    size = 6,
+    hjust = 0,
+    direction = 'y',
+    family = 'Rubik'
+  ) +
+  geom_bump(size = 4, smooth = 100,alpha = 0.8) +
+  coord_cartesian(clip = "off") +
+  scale_y_continuous(labels = scales::percent) +
+
+  scale_color_manual(
+    values = c(
+      '#ffb703',
+      '#f4a261',
+      '#fe938c',
+      '#011627',
+      '#840032',
+      '#00b4d8',
+      '#e71d36',
+      '#2ec4b6',
+      '#e71d36'
+    )
+  ) +
+
+  labs(title = 'نسبت کاربران دیتابیس مختلف بین سال های 1394 تا 1398',
+       x = '',
+       y = 'درصد',
+       caption = caption) +
+  theme_farsh_fa(base_size = 25) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = 'none',
+    plot.caption = element_text(size = 15,margin = margin(t = 20)),
+    plot.title = element_text(size = 25,margin = margin(t = 10,b = 30)),
+    axis.text.y = element_text(margin = margin(l = 30))
+  )
+```
+
+
+
+
+
+#### Technology Trends
+
+
+```{r fig.height=15,fig.width=20}
+df_tech <- data_94_98 %>%
+  group_by(year) %>%
+  mutate(n_obs = n()) %>%
+  ungroup() %>%
+  filter(technologies != ' ', technologies != '') %>%
+  separate_rows(technologies, sep = ',') %>%
+  separate_rows(technologies, sep = ';') %>%
+  mutate(technologies = str_trim(technologies)) %>%
+  add_count(technologies) %>%
+  filter(n > 10) %>%
+  group_by(year, technologies) %>%
+  summarise(freq =  n() / mean(n_obs)) %>%
+  ungroup()
+
+
+
+ggplot(data = df_tech, aes(year, freq, color = technologies)) +
+  geom_point(size = 8, alpha = 0.9) +
+  geom_text_repel(
+    data = df_tech %>% filter(year == max(year)),
+    aes(x = year + 0.4 , label = technologies),
+    size = 5.5,
+    hjust = 0,
+    direction = 'y',
+    family = 'Vazir FD'
+  ) +
+  geom_bump(size = 5,
+            smooth = 100,
+            alpha = 0.9) +
+  coord_cartesian(clip = "off") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 0.8)) +
+  
+  scale_color_manual(
+    values = c(
+      '#ffb703',
+      '#f4a261',
+      '#fe938c',
+      '#011627',
+      '#840032',
+      '#00b4d8',
+      '#4281a4',
+      '#2ec4b6',
+      '#e71d36'
+    )
+  ) +
+  labs(
+    title = 'روند استفاده از تکنولوژی های مختلف توسط برنامه نویس ها و مدیران سیستم بین سال های 1395 تا 1398',
+    x = '',
+    y = 'درصد',
+    caption = caption
+  ) +
+  theme_farsh_fa(base_size = 25) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = 'none',
+    plot.caption = element_text(size = 15, margin = margin(t = 20)),
+    plot.title = element_text(size = 25, margin = margin(t = 10, b = 30)),
+    axis.text.y = element_text(margin = margin(l = 30)
+    )
+  )
+```
+
+
+
+
+
+
+#### Country
+
+```{r fig.height=20,fig.width=20}
+data_94_98 %>%
+  count(year, province_work) %>%
+  filter(!is.na(province_work)) %>%
+  mutate(name_farsi = province_work,
+         year = as.integer(year)) %>%
+  ggplot(aes(year, n, color = name_farsi)) +
+  geom_line(color = 'indianred',
+            size = 1.2,
+            alpha = 0.7) +
+  
+  geom_point(size = 5, color = 'indianred') +
+  scale_x_continuous(breaks = c(1396, 1397, 1398)) +
+  scale_y_log10() +
+  facet_geo(~ name_farsi, grid = grid) +
+  gghighlight(unhighlighted_params = list(
+    size = 1.5,
+    width = 0.5,
+    color = '#F6DAB4',
+    alpha  = 0.7
+  )) +
+  
+  labs(
+    x = '',
+    y = '',
+    title = ' تعداد توسعه دهندگان و مدیران سیستم شاغل در استان های کشور بین سال های 1394 تا 1398 ',
+    subtitle = 'نمودار زیر به ما تعداد شرکت کنندگان نظرسنجی سالیانه برنامه نویس ها و مدیران سیستمی را به تفکیک استان های مختلف کشور را با هم مقایسه می کند',
+    caption = caption
+  ) +
+  theme_farsh_fa(
+    plot_title_size = 70,
+    subtitle_size = 20,
+    strip_text_size = 17,
+    base_size = 15
+  ) +
+  theme(
+    legend.text = element_text(size = 15),
+    plot.title = element_text(margin = margin(t = 30, b = 20)),
+    plot.subtitle = element_text(margin = margin(b = 30))
+  )
+
+```
+
+
+
+### Job Satisfaction
+
+#### Job satisfaction, life style and gender
+```{r fig.height=7,fig.width=10}
+
+
+data_94_98 %>%
+  filter(
+    !is.na(Timestamp),
+    sex %in% c('مرد', 'زن'),
+    !is.na(`How_do_you_describe_yourself?`),
+    year == 1398
+  ) %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ';') %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ',') %>%
+  mutate(
+    `How_do_you_describe_yourself?` = str_trim(`How_do_you_describe_yourself?`),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  add_count(`How_do_you_describe_yourself?`) %>%
+  filter(n > 10) %>%
+  group_by(sex, `How_do_you_describe_yourself?`) %>%
+  summarize(freq = mean(job_satisfaction, na.rm = TRUE)) %>%
+  ggplot(aes(
+    sex,
+    `How_do_you_describe_yourself?`,
+    fill = freq ,
+    label = round(freq, 2)
+  )) +
+  geom_tile(size = 20) +
+  geom_text(size = 6) +
+  scale_fill_gradientn(
+    colours  = c(
+      '#f94144',
+      '#f3722c',
+      '#f8961e',
+      '#f9c74f',
+      '#90be6d',
+      '#43aa8b',
+      '#577590'
+    )
+  ) +
+  labs(
+    y = '',
+    x = '',
+    title = 'رضایت شغلی، سبک زندگی و جنسیت برنامه نویس ها',
+    fill = 'میانگین رضایت شغلی',
+    caption = caption
+  ) +
+  theme_minimal_fa() +
+  theme_farsh_fa(base_size = 13)  +
+  theme(legend.position = 'none',
+        plot.title = element_text(margin = margin(b = 30), size = 16))
+```
+
+
+
+ #### Job satisfaction, life style and salary
+```{r fig.height=15,fig.width=20}
+
+
+data_94_98 %>%
+  filter(
+    !is.na(Timestamp),
+    sex %in% c('مرد', 'زن'),!is.na(`How_do_you_describe_yourself?`),
+    year == 1398
+  ) %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ';') %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ',') %>%
+  mutate(
+    `How_do_you_describe_yourself?` = str_trim(`How_do_you_describe_yourself?`),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  add_count(`How_do_you_describe_yourself?`) %>%
+  filter(n > 10) %>%
+  group_by(salary, `How_do_you_describe_yourself?`) %>%
+  summarize(freq = mean(job_satisfaction, na.rm = TRUE)) %>%
+  ggplot(aes(
+    salary,
+    `How_do_you_describe_yourself?`,
+    fill = freq,
+    label = round(freq, 1)
+  )) +
+  
+  
+  geom_tile(size = 20) +
+  geom_text(size = 9) +
+  scale_fill_gradientn(
+    colours  = c(
+      '#f94144',
+      '#f3722c',
+      '#f8961e',
+      '#f9c74f',
+      '#90be6d',
+      '#43aa8b',
+      '#577590'
+    )
+  ) +
+  labs(
+    y = '',
+    x = '',
+    title = 'رضایت شغلی، سبک زندگی و درآمد برنامه نویس ها',
+    fill = 'میانگین رضایت شغلی',
+    caption = caption
+  ) +
+  theme_minimal_fa() +
+  theme_farsh_fa()  +
+  theme(
+    legend.position = 'none',
+    plot.title = element_text(margin = margin(b = 50), size = 37),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(size = 20),
+    axis.text.x = element_text(angle  = 90),
+    axis.ticks = element_blank()
+  )
+```
+
+```{r eval=FALSE, fig.height=10, fig.width=15, include=FALSE}
+
+exp_levels <- c(
+  "زیر یکسال",
+  "یک تا سه سال",
+  "سه تا هفت سال" ,
+  "هفت تا پانزده سال",
+  "پانزده تا بیست و پنج",
+  "بالای بیست و پنج"
+  
+)
+data_94_98 %>%
+  filter(
+    !is.na(Timestamp),
+    #year == 1398,
+    # !is.na(relationship_status),
+    sex %in% c('مرد', 'زن'),!is.na(`How_do_you_describe_yourself?`),
+    year == 1398
+  ) %>%
+  mutate(experience = fct_relevel(as.factor(experience), exp_levels)) %>%
+  group_by(experience) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  group_by(experience, salary) %>%
+  summarize(freq = round(n() * 100 / n, 0) / 100) %>%
+  ungroup() %>%
+  ggplot(aes(
+    experience,
+    salary,
+    fill = freq,
+    label = scales::percent(freq, accuracy = 1)
+  )) +
+  geom_tile(size = 20) +
+  geom_text(size = 9) +
+  scale_fill_gradientn(
+    colours  = c(
+      '#f94144',
+      '#f3722c',
+      '#f8961e',
+      '#f9c74f',
+      '#90be6d',
+      '#43aa8b',
+      '#577590'
+    )
+  ) +
+  labs(
+    y = '',
+    x = '',
+    title = 'تجربه و درآمد برنامه نویس ها',
+    fill = 'میانگین رضایت شغلی',
+    caption = caption
+  ) +
+  theme_minimal_fa() +
+  theme_farsh_fa()  +
+  theme(
+    legend.position = 'none',
+    plot.title = element_text(margin = margin(b = 50), size = 20),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(size = 15),
+    axis.text.x = element_text(angle  = 90),
+    axis.ticks = element_blank()
+  )
+```
+
+
+```{r fig.height=10,fig.width=10}
+
+data_94_98 %>%
+  filter(!is.na(Timestamp),!is.na(workplace_facilities),
+         year == 1398) %>%
+  separate_rows(workplace_facilities, sep = ',') %>%
+  mutate(
+    workplace_facilities = str_trim(workplace_facilities),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  add_count(workplace_facilities) %>%
+  filter(n > 10) %>%
+  group_by(workplace_facilities) %>%
+  mutate(mean_js = mean(job_satisfaction)) %>%
+  arrange(desc(mean_js)) %>%
+  ungroup() %>%
+  ggplot(aes(fct_reorder(workplace_facilities, mean_js), job_satisfaction)) +
+  geom_jitter(
+    width = 0.1,
+    height = 1.0,
+    alpha = 0.1,
+    size = 4,
+    color = '#ff9f1c'
+  ) +
+  coord_flip() +
+  labs(
+    y = 'رضایت شغلی',
+    x = '',
+    title = 'رضایت شغلی توسعه دهنده ها و امکاناتی که شرکت ها  در اختیار آن ها قرار می دهند',
+    color = ''
+  ) +
+  stat_summary(
+    geom = 'point',
+    size = 4,
+    fun = 'mean',
+    color = '#e71d36',
+    fill = '#e71d36',
+    shape = 24,
+    alpha = 0.8
+  ) +
+  scale_y_continuous(limits = c(0, 5), breaks = c(0, 1, 2, 3, 4, 5)) +
+  
+  theme_farsh_fa()
+
+```
+
+
+```{r fig.height=10,fig.width=10}
+data_94_98 %>%
+  filter(!is.na(Timestamp),!is.na(favorite_drinks),
+         year == 1398) %>%
+  separate_rows(favorite_drinks, sep = ',') %>%
+  mutate(
+    favorite_drinks = str_trim(favorite_drinks),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  add_count(favorite_drinks) %>%
+  filter(n > 10) %>%
+  group_by(favorite_drinks) %>%
+  mutate(mean_js = mean(job_satisfaction)) %>%
+  arrange(desc(mean_js)) %>%
+  ungroup() %>%
+  ggplot(aes(fct_reorder(favorite_drinks, mean_js), job_satisfaction)) +
+  geom_jitter(
+    width = 0.1,
+    height = 1.0,
+    alpha = 0.1,
+    size = 4,
+    color = '#ff9f1c'
+  ) +
+  coord_flip() +
+  labs(
+    y = 'رضایت شغلی',
+    x = '',
+    title = 'رضایت شغلی توسعه دهنده ها و امکاناتی که شرکت ها  در اختیار آن ها قرار می دهند',
+    color = ''
+  ) +
+  stat_summary(
+    geom = 'point',
+    size = 4,
+    fun = 'mean',
+    color = '#e71d36',
+    fill = '#e71d36',
+    shape = 24,
+    alpha = 0.8
+  ) +
+  scale_y_continuous(limits = c(0, 5), breaks = c(0, 1, 2, 3, 4, 5)) +
+  
+  theme_farsh_fa()
+
+```
+
+```{r fig.height=10,fig.width=10}
+data_94_98 %>%
+  filter(!is.na(Timestamp),
+         year == 1398) %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ',') %>%
+  mutate(
+    `How_do_you_describe_yourself?` = str_trim(`How_do_you_describe_yourself?`),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  filter(!is.na(`How_do_you_describe_yourself?`)) %>%
+  add_count(`How_do_you_describe_yourself?`) %>%
+  filter(n > 10) %>%
+  group_by(`How_do_you_describe_yourself?`) %>%
+  mutate(mean_js = mean(job_satisfaction)) %>%
+  arrange(desc(mean_js)) %>%
+  ungroup() %>%
+  ggplot(aes(
+    fct_reorder(`How_do_you_describe_yourself?`, mean_js),
+    job_satisfaction
+  )) +
+  geom_jitter(
+    width = 0.15,
+    height = 1.0,
+    alpha = 0.1,
+    size = 3,
+    color = '#ff9f1c'
+  ) +
+  coord_flip() +
+  labs(
+    y = 'رضایت شغلی',
+    x = '',
+    title = 'سبک زندگی و رضایت شغلی برنامه نویس ها',
+    subtitle = '',
+    color = ''
+  ) +
+  stat_summary(
+    geom = 'point',
+    size = 4,
+    fun = 'mean',
+    color = '#e71d36',
+    fill = '#e71d36',
+    shape = 24,
+    alpha = 0.6
+  ) +
+  scale_y_continuous(limits = c(0, 5), breaks = c(0, 1, 2, 3, 4, 5)) +
+  theme_farsh_fa()
+```
+
+
+
+```{r fig.height=10,fig.width=10}
+data_94_98 %>%
+  filter(!is.na(Timestamp),
+         year == 1398) %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ',') %>%
+  mutate(
+    `How_do_you_describe_yourself?` = str_trim(`How_do_you_describe_yourself?`),
+    job_satisfaction = as.numeric(job_satisfaction)
+  ) %>%
+  filter(!is.na(`How_do_you_describe_yourself?`)) %>%
+  add_count(`How_do_you_describe_yourself?`) %>%
+  filter(n > 10) %>%
+  group_by(`How_do_you_describe_yourself?`) %>%
+  mutate(mean_js = mean(job_satisfaction)) %>%
+  arrange(desc(mean_js)) %>%
+  ungroup() %>%
+  ggplot(aes(
+    fct_reorder(`How_do_you_describe_yourself?`, mean_js),
+    job_satisfaction
+  )) +
+  geom_jitter(
+    width = 0.15,
+    height = 1.0,
+    alpha = 0.1,
+    size = 3,
+    color = '#ff9f1c'
+  ) +
+  coord_flip() +
+  labs(
+    y = 'رضایت شغلی',
+    x = '',
+    title = 'سبک زندگی و رضایت شغلی برنامه نویس ها',
+    subtitle = '',
+    color = ''
+  ) +
+  stat_summary(
+    geom = 'point',
+    size = 4,
+    fun = 'mean',
+    color = '#e71d36',
+    fill = '#e71d36',
+    shape = 24,
+    alpha = 0.6
+  ) +
+  scale_y_continuous(limits = c(0, 5), breaks = c(0, 1, 2, 3, 4, 5)) +
+  theme_farsh_fa()
+```
+
+
+
+
+### Gender
+```{r fig.height=20,fig.width=20}
+data_94_98 %>%
+  filter(
+    !is.na(Timestamp),
+    year == 1398,
+    sex %in% c('مرد',
+               'زن'),!is.na(`How_do_you_describe_yourself?`)
+  ) %>%
+  separate_rows(`How_do_you_describe_yourself?`, sep = ',') %>%
+  mutate(`How_do_you_describe_yourself?` = str_trim(`How_do_you_describe_yourself?`)) %>%
+  add_count(`How_do_you_describe_yourself?`) %>%
+  filter(n > 10) %>%
+  group_by(sex) %>%
+  mutate(n = n()) %>%
+  ungroup() %>%
+  group_by(sex, `How_do_you_describe_yourself?`) %>%
+  summarize(prop = n() / mean(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x = `How_do_you_describe_yourself?`, y = prop, fill = sex)) +
+  geom_col(position = position_dodge(preserve = "single")) +
+  scale_y_continuous(labels = scales::label_percent()) +
+  guides(fill = guide_legend(override.aes = list(size = 15))) +
+  labs(
+    x = '',
+    y = '',
+    fill = '',
+    title = 'سبک زندگی مردها و زن های برنامه نویس',
+    caption = caption
+  ) +
+  theme_farsh_fa(base_size = 20) +
+  theme(
+    axis.text.x = element_text(angle = 90, margin = margin(t = 0)),
+    legend.text = element_text(size = 20) ,
+    axis.ticks = element_blank()
+  )
+
+```
+
+```{r fig.height=20,fig.width=20}
+data_94_98 %>% 
+  filter(!is.na(Timestamp),
+         year == 1398,
+         sex %in% c('مرد',
+                    'زن'),
+         !is.na(relationship_status)) %>% 
+  mutate( relationship_status = str_trim(relationship_status)) %>% 
+  add_count(relationship_status) %>% 
+  filter(n >10) %>% 
+  group_by(sex) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  group_by(sex,relationship_status) %>% 
+  summarize(prop = n()/mean(n)) %>%
+  ungroup() %>% 
+  ggplot(aes(x = relationship_status, y = prop,fill = sex)) +
+  geom_col(position = position_dodge(preserve = "single")) +
+  scale_y_continuous(labels = scales::label_percent())+
+  guides(fill = guide_legend(override.aes = list(size = 15))) +
+  labs(x = '',
+       y = '',
+       fill = '',
+       title = 'سبک زندگی مردها و زن های برنامه نویس',
+       caption = caption) +
+  theme_farsh_fa(base_size = 20) +
+  theme(axis.text.x = element_text(angle = 90,margin = margin(t = 0)),
+        legend.text = element_text(size = 20) ,
+        axis.ticks = element_blank())
+```
+
+```{r fig.height=15,fig.width=12}
+prog_lang_df %>%
+  filter(
+    programming_languages %in%  top_langs[1:24],!is.na(sex),
+    sex %in% c('مرد',
+               'زن'),
+    year == 1398
+  ) %>%
+  group_by(programming_languages, sex) %>%
+  summarise(n =  n()) %>%
+  mutate(freq = n / sum(n)) %>% #View()
+  ungroup() %>%
+  
+  ggplot(aes(x = 1, y = freq)) +
+  geom_col(aes(width = 1, fill = as.factor(sex)),
+           stat = "identity",
+           alpha = 0.7) +
+  coord_polar(theta = "y") +
+  facet_wrap( ~ programming_languages, ncol = 4) +
+  scale_fill_manual(values = c('#e9c46a',
+                               '#f4a261',
+                               '#e76f51',
+                               '#fe938c')) +
+  labs(
+    x = '',
+    y = '',
+    title = 'زبان های برنامه نویسی و جنسیت',
+    fill = '',
+    subtitle = ' چه نسبتی از توسعه دهندگان زبان های برنامه نویسی مختلف در سال 1398 را مردها و زنان تشکیل می دهند',
+    caption = caption
+  ) +
+  scale_fill_digikala() +
+  theme_farsh_fa() +
+  theme(
+    panel.spacing.x = unit(20, "pt"),
+    panel.spacing.y = unit(10, "pt"),
+    plot.margin = margin(25, 30, 25, 30),
+    plot.subtitle = element_text(margin = margin(b = 30)),
+    panel.grid.major  = element_blank(),
+    panel.grid.minor  = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    strip.text = element_text(family = 'Rubik')
+  )
+```
+
+```{r fig.height=15,fig.width=12}
+data_94_98 %>% 
+  group_by(year) %>% 
+  mutate(n_obs =n()) %>% 
+  ungroup() %>% 
+  filter(technologies!= ' ',technologies!= '') %>%
+  separate_rows(technologies,sep = ',') %>% 
+  separate_rows(technologies,sep = ';') %>% 
+  mutate(technologies = str_trim(technologies)) %>%
+  add_count(technologies) %>% 
+  filter(n >10) %>% 
+  filter(!is.na(sex),
+         sex %in% c('مرد',
+                    'زن') ) %>% 
+  group_by(technologies, sex) %>% 
+  summarise(n =  n()) %>%   
+  mutate(freq = n/sum(n) )%>% #View()
+  ungroup() %>% 
+
+  ggplot(aes(x = 1, y = freq  )) +
+  geom_col(aes(width= 1, fill = as.factor(sex)),  stat = "identity",alpha = 0.7) +
+  coord_polar(theta = "y") +
+  facet_wrap(~technologies, ncol = 4) +
+  scale_fill_manual(values = c(     '#e9c46a',
+    '#f4a261',
+    '#e76f51',
+    '#fe938c' )) +
+  labs(x = '',y = '', 
+       title = 'زبان های برنامه نویسی و جنسیت',fill = '',
+       subtitle = 'در نمودار زیر می توانید ببینید که چه نسبتی از توسعه دهندگان زبان های برنامه نویسی مختلف را مردها و زنان تشکیل می دهند',
+       caption = caption) +
+  scale_fill_digikala()+
+  theme_farsh_fa() +
+  theme(panel.spacing.x = unit(20, "pt"),
+          panel.spacing.y = unit(10, "pt"),
+          plot.margin = margin(25, 30, 25, 30),
+        plot.subtitle = element_text(margin = margin(b = 30)),
+          panel.grid.major  = element_blank(),
+          panel.grid.minor  = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+        strip.text = element_text(family = 'Rubik'))
+```
+
+
+
+#### Gender in different provinces
+```{r fig.height=20,fig.width=20}
+data_94_98 %>%
+  count(year, province_work, sex) %>%
+  filter(!is.na(province_work)) %>%
+  mutate(name_farsi = province_work,
+         year = as.integer(year)) %>%
+  filter(sex %in% c('زن',
+                    'مرد')) %>%
+  ggplot(aes(x = year, y = n, color = sex)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 5) +
+  scale_x_continuous(breaks = c(1394, 1395, 1396, 1397, 1398)) +
+  facet_geo( ~ name_farsi, grid = grid, scales = 'free_y') +
+  labs(
+    x = '',
+    y = '',
+    title = 'تعداد توسعه دهندگان و مدیران سیستم به تفکیک جنیست در استان های کشور',
+    color = '',
+    caption = caption
+  ) +
+  theme_farsh_fa(
+    plot_title_size = 70,
+    subtitle_size = 20,
+    strip_text_size = 17,
+    base_size = 15
+  ) +
+  theme(legend.text = element_text(size = 20),
+        plot.title = element_text(size = 27, margin = margin(b = 20)))
+```
+
+```{r fig.height=10,fig.width=20}
+data_94_98 %>% 
+  filter(year == 1398,
+         sex %in% c('مرد',
+                    'زن')) %>% 
+  group_by(sex,salary) %>% 
+  summarise(n = n()) %>% 
+  mutate(n = n/sum(n)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = salary,n,fill = sex),alpha = 0.1) +
+  geom_col(position = position_dodge(preserve = "single")) +
+  labs(x = '',y='') +
+  theme_farsh_fa()
+  
+```
