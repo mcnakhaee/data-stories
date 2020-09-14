@@ -6,7 +6,7 @@
 
 
 <p align="center">
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="800" height = "400">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="400" height = "400">
 
 </p>
 
