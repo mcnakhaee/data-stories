@@ -6,11 +6,15 @@
 
 
 <p align="center">
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="600" height = "750">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="800" height = "700">
 
 </p>
 
 
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/sex_prov.png?raw=true" width="800" height = "700">
+
+</p>
 ### Corona in Iran
 
 <p align="center">
