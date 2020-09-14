@@ -1,6 +1,16 @@
 # Data Stories
 
 
+### Programmers Survey
+
+
+
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="600" height = "750">
+
+</p>
+
+
 ### Corona in Iran
 
 <p align="center">
