@@ -1,0 +1,425 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+
+library(ggtext)
+library(tidyverse)
+library(qdapRegex)
+library(tidytext)
+library(syuzhet)
+library(lubridate)
+library(twinetverse)
+library(lubridate)
+library(rtweet)
+library(visNetwork)
+library(ggraph)
+library(igraph)
+library(tidygraph)
+library(ggwordcloud)
+library(ggthemes)
+library(cowplot)
+library(ggstream)
+library(scales)
+
+
+
+myFont <- 'Rubik'
+windowsFonts(Rubik  = myFont)
+
+
+
+theme_update(
+            text = element_text(family = 'Rubik'),
+                plot.background = element_rect(fill = '#FFFAF0'),
+                panel.background = element_rect(fill = '#FFFAF0'),
+                panel.grid.minor = element_blank(),
+                panel.grid.major = element_blank(),
+          )
+
+
+color_values <- c( 'positive' ='#118ab2' ,
+                                    'negative'  = '#ef476f',
+                                    'anger' ='#d62828',
+                                    'fear' = '#f77f00',
+                                    'sadness' = '#003049',
+                                    'disgust' = '#b5838d' ,
+                                    'surprise' = '#ffd166',
+                                    'anticipation' = '#028090',
+                                    'trust' = '#06d6a0' ,
+                                    'joy' = '#BDB2FF')
+```
+
+
+
+
+```{r}
+persconferentie_tweets <- read_csv('persconferentie_tweets.csv')
+
+persconferentie_tweets_org <- persconferentie_tweets %>%
+  filter(!(is_retweet),
+         favorite_count > 0) %>%
+  arrange(desc(favorite_count)) %>%
+  mutate(
+    text_cleaned = str_replace_all(text, "@\\w+", ""),
+    text_cleaned = str_replace_all(text_cleaned, "RT @[a-z,A-Z]*: ", ""),
+    text_cleaned = str_replace_all(text_cleaned, "http\\w+", ""),
+    text_cleaned = str_replace_all(text_cleaned, "#[a-z,A-Z]*", "")
+  )
+```
+
+
+```{r fig.height=20,fig.width=20}
+
+
+net <- persconferentie_tweets %>%
+  filter(is_retweet,
+         retweet_count > 200) %>%
+  select(
+    screen_name,
+    retweet_screen_name,
+    retweet_favorite_count,
+    retweet_count,
+    favorite_count
+  )
+
+sources <- net %>% distinct(retweet_screen_name) %>% pull()
+targets <- net %>% distinct(screen_name) %>% pull()
+
+
+graph_df <- net %>%
+  rename(from = retweet_screen_name, to = screen_name) %>%
+  as_tbl_graph(directed = TRUE) %>%
+  activate(nodes) %>%
+  mutate(
+    size = if_else(name %in% sources, 20, 1),
+    is_source = if_else(name %in% sources, TRUE, FALSE),
+    name_ = if_else(name %in% sources, name, '')
+  )
+
+
+layout_ <-
+  create_layout(graph_df, layout = 'igraph', algorithm = 'graphopt')
+graph_plot <- layout_ %>%
+  ggraph() +
+  geom_edge_link(color = '#f9dcc4', alpha = 0.2) +
+  geom_node_text(aes(
+    label = name_,
+    color = is_source,
+    size = size
+  ), family = 'Rubik') +
+  geom_node_point(aes(size = size, color = is_source), alpha = 0.4)
+graph_plot
+```
+
+```{r sentiment}
+persconferentie_tweets_sentiment <- persconferentie_tweets_org %>%
+  bind_cols(get_nrc_sentiment(as.vector(
+    persconferentie_tweets$text_cleaned),
+    language = 'dutch')) 
+```
+
+```{r fig.width=20,fig.height=10}
+sentiment_stream_plot <- persconferentie_tweets_sentiment %>%
+  filter(created_at > '2020-09-28 10:37:41') %>%
+  select(
+    text,
+    created_at,
+    anger,
+    anticipation,
+    disgust,
+    fear,
+    joy  ,
+    sadness,
+    surprise,
+    trust ,
+    negative,
+    positive,
+    favorite_count
+  ) %>%
+  pivot_longer(anger:positive, names_to = 'sentiment', values_to = 'value') %>%
+  
+  mutate(hour = round_date(created_at, unit = 'hour')) %>%
+  group_by(created_at, sentiment) %>%
+  summarize(val_fav = sum(value)) %>%
+  ungroup() %>%
+  arrange(created_at, sentiment, val_fav) %>%
+  ggplot(aes(created_at, val_fav,
+             color = sentiment,
+             fill = sentiment)) +
+  geom_stream(geom = "contour",
+              size = 1.25,
+              bw = .1) +
+  geom_stream(geom = "polygon",
+              bw = .1,
+              size = 0) +
+  geom_vline(
+    data = tibble(x = c(97, seq(125, 250, by = 25), 280)),
+    aes(xintercept = x),
+    inherit.aes = F,
+    color = "grey88",
+    size = .5,
+    linetype = "dotted"
+  ) +
+  scale_fill_manual(values = color_values) +
+  scale_color_manual(values = color_values) +
+  
+  scale_x_datetime(breaks = date_breaks("3 hours")) +
+  labs(
+    title = "Sentiment of Tweets Posted Before, During and After Mark Rutte's Press Conference",
+    
+    fill = '',
+    color = '' ,
+    x = '',
+    y = ''
+  ) +
+  coord_cartesian(clip = "off") +
+  theme(
+    text = element_text(color = 'gray90'),
+    legend.position = 'top',
+    legend.background = element_rect(fill = 'gray14', color =  'gray14'),
+    legend.margin = margin(t = 30, b = 30),
+    legend.text = element_text(size = 15, color = 'gray90'),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 13, color = 'gray90'),
+    axis.ticks.y = element_blank(),
+    plot.title = element_text(
+      size = 20,
+      margin = margin(t = 30, b = 30),
+      hjust = 0.5
+    ),
+    plot.background = element_rect(fill = 'gray14', color =  'gray14'),
+    panel.background = element_rect(fill = 'gray14', color =  'gray14')
+  )
+
+sentiment_stream_plot
+```
+
+
+```{r}
+overall_sentiment_plot <- persconferentie_tweets_sentiment %>%
+  select(
+    text,
+    anger,
+    anticipation,
+    disgust,
+    fear,
+    joy  ,
+    sadness,
+    surprise,
+    trust ,
+    negative,
+    positive,
+    favorite_count
+  ) %>%
+  pivot_longer(anger:positive, names_to = 'sentiment', values_to = 'value') %>%
+  group_by(sentiment) %>%
+  summarize(val_fav = sum(value)) %>%
+  ungroup() %>%
+  ggplot(aes(fct_reorder(sentiment, val_fav), val_fav, fill = sentiment)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  labs(title = 'The Overall Sentiment of Tweets about the Press Conference',
+       x = '',
+       y = '') +
+  scale_fill_manual(
+    values = color_values ) +
+  
+  theme(
+    legend.position = 'none',
+    plot.background = element_rect(fill = 'gray14', color =  'gray14'),
+    panel.background = element_rect(fill = 'gray14', color =  'gray14'),
+    text = element_text(color = 'gray90'),
+    axis.text = element_text(size = 15, color = 'gray90'),
+    axis.text.x = element_blank(),
+    plot.title = element_text(
+      size = 20,
+      margin = margin(t = 30, b = 30),
+      hjust = 0.5
+    )
+  )
+
+overall_sentiment_plot 
+```
+
+```{r fig.height=10,fig.width=10}
+hashtags_counts <- persconferentie_tweets %>%
+  mutate(hashtags = as.character(hashtags)) %>%
+  filter(!is.na(hashtags), hashtags != '') %>%
+  separate_rows(hashtags, sep = ' ') %>%
+  select(hashtags) %>%
+  mutate(hashtags = str_to_lower(str_trim(hashtags))) %>%
+  count(hashtags, sort =  TRUE) %>%
+  #rename(from = hashtags, to = hashtags_tmp) %>%
+  filter(n > 10) %>%
+  add_rownames() %>%
+  filter(
+    !rowname %in% c(57, 101, 73, 62, 143),
+    !str_to_lower(hashtags) %in% c(
+      'persconferentie',
+      'covid__19',
+      'firstdates',
+      'lol',
+      'rtlnieuws',
+      'trumpisnotabillionaire',
+      'trumpcrimefamily',
+      'npo1',
+      'op1npo',
+      'nos',
+      'nosjournaal',
+      'nosjournaal',
+      'op1',
+      'persco',
+      'loveisland',
+      'nederlandsnieuws',
+      'trumpisbroke',
+      'tk2021',
+      'npo',
+      'news',
+      'mondaymotivation',
+      'nieuws',
+      'nwo',
+      'bitcoin',
+      'ourenergyyenday'
+    )
+  )
+
+
+hashtag_wordcloud <- hashtags_counts %>%
+  ggplot(aes(label = hashtags,
+             size = log(n) * 10)) +
+  geom_text_wordcloud_area(family = 'Rubik',
+                           shape = 'circle',
+                           color = "#e76f51")  +
+  
+  scale_size_area(max_size = 10) +
+  theme(
+    plot.background = element_rect(color = NA, fill = NA),
+    panel.background = element_rect(color = NA, fill = NA),
+    plot.title = element_text(
+      size = 20,
+      margin = margin(t = 0, b = 0),
+      hjust = 0.5,
+      color = 'grey90'
+    )
+  )
+
+hashtag_wordcloud
+
+```
+
+
+
+
+
+
+```{r }
+top_tweets <- persconferentie_tweets_org %>%
+  arrange(desc(favorite_count)) %>%
+  slice(1:7) %>%
+  mutate(
+    text_cleaned =  str_replace_all(text_cleaned, "http\\w+", ""),
+    text_cleaned =  paste(
+      str_wrap(text_cleaned, width = 100),
+      paste(name, ',', favorite_count, 'Likes', retweet_count, 'Retweets') ,
+      sep = '\n\n '
+    )
+  )
+```
+
+
+```{r}
+
+title_text_box <-
+  tibble(x = 1, y = 2, label = 'Most Popular Tweets') %>% ggplot() +
+  ggtext::geom_textbox(
+    aes(x = 0.1, y = 1.78, label = label),
+    width = unit(14.8, "inch"),
+    family = "Rubik",
+    color = "gray90",
+    size = 8,
+    fill = 'gray14',
+    box.colour = NA,
+    hjust = 0.5
+  ) +
+  theme_void()
+title_hashtags <-
+  tibble(x = 1, y = 2, label = 'Most Popular Hashtags') %>% ggplot() +
+  ggtext::geom_textbox(
+    aes(x = 0.1, y = 1.78, label = label),
+    width = unit(14.8, "inch"),
+    family = "Rubik",
+    color = "gray90",
+    size = 8,
+    fill = 'gray14',
+    box.colour = NA,
+    hjust = 0.5
+  ) +
+  theme_void()
+
+theme(plot.title = element_text(
+  size = 20,
+  margin = margin(t = 0, b = 0),
+  hjust = 0.5,
+  color = 'grey90'
+))
+draw_textbox <- function(n = 1,
+                         x = 0.1,
+                         y = 0.2) {
+  ggplot() +
+    ggtext::geom_textbox(
+      data = top_tweets %>% slice(n),
+      aes(x = 0.1, y = 1.78, label = text_cleaned),
+      width = unit(4.8, "inch"),
+      family = "Rubik",
+      color = "gray80",
+      size = 5,
+      fill = NA,
+      box.colour = 'gray',
+      hjust = 0.5
+    ) +
+    theme_void()
+  
+}
+
+```
+
+
+
+```{r fig.height=30,fig.width=19}
+ggdraw(
+  plot_grid(
+    sentiment_stream_plot,
+    overall_sentiment_plot,
+    nrow = 2,
+    rel_heights = c(0.65, 0.35)
+  ),
+  xlim = c(0, 1),
+  ylim = c(-0.6, 1)
+) +
+  draw_plot(title_hashtags, x = 0.1, y = -.55) +
+  draw_plot(hashtag_wordcloud,
+            x = -0.05,
+            y = -.8,
+            width = .7,) +
+  draw_plot(title_text_box, x = .6, y = -.55) +
+  draw_plot(draw_textbox(), x = .3, y = -.65) +
+  draw_plot(draw_textbox(n = 2), x = .3, y = -.76) +
+  draw_plot(draw_textbox(n = 3), x = .3, y = -.87) +
+  draw_plot(draw_textbox(n = 4), x = .3, y = -.98) +
+  
+  theme(
+    plot.background = element_rect(fill = 'gray14', color =  'gray14'),
+    panel.border = element_blank()
+    
+  ) +
+  panel_border(color = '#14213d', remove = TRUE)
+```
+
+
+
+
+
+
