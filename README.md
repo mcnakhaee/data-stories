@@ -1,18 +1,33 @@
 # Data Stories
 
 
-### Programmers Survey
+### US First Presidential Debate
+
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/US%20Presidential%20Debates/00000f.png" width="900" height = "500">
+
+</p>
+
+
+### Reactions to Mark Rutte's Press Conference on September 29th 
 
 
 
 <p align="center">
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="400" height = "400">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Rutte's%20Corona%20Press%20Conference/0.jpg" width="500" height = "800">
+
+</p>
+
+### Programmers's Survey 2019 in Iran
+
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="500" height = "500">
 
 </p>
 
 
 <p align="center">
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/sex_prov.png?raw=true" width="400" height = "400">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/sex_prov.png?raw=true" width="500" height = "500">
 
 </p>
 ### Corona in Iran
