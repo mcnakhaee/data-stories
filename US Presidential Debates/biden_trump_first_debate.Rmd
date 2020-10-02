@@ -8,22 +8,9 @@ data from : https://www.kaggle.com/theogoe/first-pres-debate-2020
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(lubridate)
-library(plotly)
-library(cowplot)
-library(readxl)
-library(ggthemes)
-library(hrbrthemes)
 library(showtext)
 font_add_google("Lobster", "Lobster")
 font_add_google("Overpass", "Overpass")
-font_add_google("Overpass Mono", "Overpass Mono")
-extrafont::loadfonts(device="win")
-
-myFont <- 'Lobster'
-windowsFonts(Lobster  = myFont)
-
-myFont <- 'Overpass'
-windowsFonts(Overpass  = myFont)
 ```
 
 ```{r}
@@ -260,7 +247,7 @@ p1 <- debate %>%
   labs(
     x = '',
     y = '',
-    title = 'How Did The First US Presidential Debate Go?',
+    title = 'How Did the First US Presidential Debate Go?',
     #subtitle = 'This plot illustrates how much time each presidential candidate spoke ',
     fill = '',
     color = '',
@@ -284,8 +271,7 @@ p1 <- debate %>%
     ),
     #plot.subtitle = element_text(size = 20,margin = margin(b = 50,t = 50,l = 40),hjust = 0.5,family = 'Lobster',color = text_col),
     plot.caption = element_text(
-      size = 20,
-      ,
+      size = 18,
       margin = margin(b = 50, t = 50),
       family = 'Lobster',
       color = text_col
