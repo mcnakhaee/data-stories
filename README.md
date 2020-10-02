@@ -4,7 +4,7 @@
 ### US First Presidential Debate
 
 <p align="center">
-<img src="https://github.com/mcnakhaee/data-stories/blob/master/US%20Presidential%20Debates/00000f.png" width="800" height = "300">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/US%20Presidential%20Debates/00000f.png" width="900" height = "500">
 
 </p>
 
