@@ -1,0 +1,300 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+data from : https://www.kaggle.com/theogoe/first-pres-debate-2020
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(cowplot)
+library(readxl)
+library(ggthemes)
+library(hrbrthemes)
+library(showtext)
+font_add_google("Lobster", "Lobster")
+font_add_google("Overpass", "Overpass")
+font_add_google("Overpass Mono", "Overpass Mono")
+extrafont::loadfonts(device="win")
+
+myFont <- 'Lobster'
+windowsFonts(Lobster  = myFont)
+
+myFont <- 'Overpass'
+windowsFonts(Overpass  = myFont)
+```
+
+```{r}
+debate_xl <- read_delim('first_debate.csv',
+                        delim = '\t',
+                        col_types = list(col_character(),
+                                         col_character(),
+                                         col_character(),
+                                         col_character(),
+                                         col_integer(),
+                                         col_integer(),
+                                         col_double(),
+                                         col_integer()))
+debate <- debate_xl %>% 
+  mutate(minutes = if_else(nchar(time)<6,paste('00:',time,sep = ''),time),
+         minutes = paste('2020-09-29',minutes,sep = ''),
+         minutes = lubridate::ymd_hms(minutes),
+         speaker = if_else(str_detect(speaker , 'Chris Wallace'),'Chris Wallace (Moderator)',speaker),
+          ) %>% 
+    mutate(minute_start = lag(minutes,n= 1),
+         duration =minutes - minute_start,
+         duration = lead(duration,n =1),
+         seconds_in_end = lead(seconds_in),
+         text = str_wrap(text,width =30))
+
+
+debate[1,5] <- 0
+```
+
+
+
+
+
+
+
+
+```{r fig.width=30}
+biden_col <- '#118ab2'
+trump_col <- '#ef476f'
+wallace_col <- '#ffd166'
+text_col <-  'gray80'
+
+
+switch_seats <- debate %>%
+  filter(str_detect(text, 'switch seats'))
+
+shut_up <- debate %>%
+  filter(str_detect(text, 'shut up'))
+
+clown <- debate %>%
+  filter(str_detect(text, 'clown'))
+
+proud_boys <- debate %>%
+  filter(str_detect(text, 'stand by'))
+
+shut_you_down <- debate %>%
+  filter(str_detect(text, 'shut you down'))
+
+
+switch_seats_arrows <- tibble(
+  x1 = c(switch_seats %>% pull(seconds_in)),
+  x2 = c(switch_seats %>% pull(seconds_in)),
+  y1 = c(1.02),
+  y2 = c(1.05)
+)
+
+
+
+shut_up_arrows <- tibble(
+  x1 = c(shut_up %>% pull(seconds_in)),
+  x2 = c(shut_up %>% pull(seconds_in)),
+  y1 = c(1.02),
+  y2 = c(1.05)
+)
+
+clown_arrow <- tibble(
+  x1 = c(clown %>% pull(seconds_in)),
+  x2 = c(clown %>% pull(seconds_in)),
+  y1 = c(1.02),
+  y2 = c(1.05)
+)
+
+
+proud_boys_arrow <- tibble(
+  x1 = c(proud_boys %>% pull(seconds_in)),
+  x2 = c(proud_boys %>% pull(seconds_in)),
+  y1 = c(0.98),
+  y2 = c(0.95)
+)
+shut_you_down_arrow <- tibble(
+  x1 = c(shut_you_down %>% pull(seconds_in)),
+  x2 = c(shut_you_down %>% pull(seconds_in)),
+  y1 = c(0.98),
+  y2 = c(0.95)
+)
+
+
+
+p1 <- debate %>%
+  #slice(1:27) %>%
+  ggplot(aes(
+    x = seconds_in,
+    y = 1,
+    xend = seconds_in_end,
+    yend = 1,
+    color = speaker
+  )) +
+  geom_segment(size = 40, alpha = 0.7) +
+  ggplot2::annotate(
+    'text',
+    x = switch_seats %>% pull(seconds_in),
+    y = 1.07,
+    label = switch_seats %>% pull(text) %>% paste('(To Trump)'),
+    size = 8,
+    family = 'Lobster',
+    color = wallace_col,
+    alpha = 0.7
+  ) +
+  
+  ggplot2::annotate(
+    'text',
+    x = shut_up %>% pull(seconds_in),
+    y = 1.06,
+    label = shut_up %>% pull(text),
+    size = 8,
+    color = biden_col,
+    family = 'Lobster',
+    alpha = 0.7
+  ) +
+  ggplot2::annotate(
+    'text',
+    x = clown %>% pull(seconds_in),
+    y = 1.07,
+    label = clown %>% pull(text),
+    size = 8,
+    color = biden_col,
+    family = 'Lobster',
+    alpha = 0.7
+  ) +
+  ggplot2::annotate(
+    'text',
+    x = shut_you_down %>% pull(seconds_in),
+    y = 0.93,
+    label = str_sub(shut_you_down %>% pull(text), start = 1, end = 55),
+    size = 8,
+    color = trump_col,
+    family = 'Lobster',
+    alpha = 0.7
+  ) +
+  ggplot2::annotate(
+    'text',
+    x = proud_boys %>% pull(seconds_in),
+    y = 0.91,
+    label = proud_boys %>% pull(text),
+    size = 8,
+    color = trump_col,
+    family = 'Lobster',
+    alpha = 0.7
+  ) +
+  geom_curve(
+    data = switch_seats_arrows,
+    aes(
+      x = x1,
+      y = y1,
+      xend = x2,
+      yend = y2
+    ),
+    arrow = arrow(length = unit(0.25, "inch")),
+    size = 6,
+    color = wallace_col,
+    curvature = 0,
+    alpha = 0.7
+  ) +
+  geom_curve(
+    data = shut_up_arrows,
+    aes(
+      x = x1,
+      y = y1,
+      xend = x2,
+      yend = y2
+    ),
+    arrow = arrow(length = unit(0.25, "inch")),
+    size = 6,
+    color = biden_col,
+    curvature = 0,
+    alpha = 0.7
+  ) +
+  geom_curve(
+    data = clown_arrow,
+    aes(
+      x = x1,
+      y = y1,
+      xend = x2,
+      yend = y2,
+      alpha = 0.7
+    ),
+    arrow = arrow(length = unit(0.25, "inch")),
+    size = 6,
+    color = biden_col,
+    curvature = 0,
+    alpha = 0.7
+  ) +
+  geom_curve(
+    data = shut_you_down_arrow,
+    aes(
+      x = x1,
+      y = y1,
+      xend = x2,
+      yend = y2
+    ),
+    arrow = arrow(length = unit(0.25, "inch")),
+    size = 6,
+    color = trump_col,
+    curvature = 0,
+    alpha = 0.7
+  ) +
+  geom_curve(
+    data = proud_boys_arrow,
+    aes(
+      x = x1,
+      y = y1,
+      xend = x2,
+      yend = y2
+    ),
+    arrow = arrow(length = unit(0.25, "inch")),
+    size = 6,
+    color = trump_col,
+    curvature = 0,
+    alpha = 0.7
+  ) +
+  guides(color = guide_legend(override.aes = list(size = 25))) +
+  scale_color_manual(values = c(wallace_col, trump_col, biden_col)) +
+  scale_y_continuous(limits = c(0.85, 1.13)) +
+  labs(
+    x = '',
+    y = '',
+    title = 'How Did The First US Presidential Debate Go?',
+    #subtitle = 'This plot illustrates how much time each presidential candidate spoke ',
+    fill = '',
+    color = '',
+    caption =  'visualization:mcnakhaee'
+  ) +
+  theme_void() +
+  theme(
+    legend.position = 'top',
+    legend.text = element_text(
+      size = 20,
+      family = 'Lobster',
+      color = text_col
+    ),
+    text = element_text(family = 'Lobster', color = text_col),
+    plot.title = element_text(
+      size = 40,
+      margin = margin(b = 40, t = 50, l = 50),
+      hjust = 0.5,
+      family = 'Lobster',
+      color = text_col
+    ),
+    #plot.subtitle = element_text(size = 20,margin = margin(b = 50,t = 50,l = 40),hjust = 0.5,family = 'Lobster',color = text_col),
+    plot.caption = element_text(
+      size = 20,
+      ,
+      margin = margin(b = 50, t = 50),
+      family = 'Lobster',
+      color = text_col
+    ),
+    plot.background = element_rect(fill = 'gray14'),
+    panel.background = element_rect(fill = 'gray14')
+  )
+p1
+```
+
+
+
