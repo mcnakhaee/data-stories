@@ -28,7 +28,14 @@ debate <- debate_xl %>%
   mutate(minutes = if_else(nchar(time)<6,paste('00:',time,sep = ''),time),
          minutes = paste('2020-09-29',minutes,sep = ''),
          minutes = lubridate::ymd_hms(minutes),
-         speaker = if_else(str_detect(speaker , 'Chris Wallace'),'Chris Wallace (Moderator)',speaker),
+         minute_start = lag(minutes,n= 1),
+         duration =minutes - minute_start,
+         duration = lead(duration,n =1),
+         seconds_in_end = lead(seconds_in),
+         text = str_wrap(text,width =30),
+        speaker = if_else(str_detect(speaker , 'Chris Wallace'),'Chris Wallace (Moderator)',speaker)
+
+                         
           ) %>% 
     mutate(minute_start = lag(minutes,n= 1),
          duration =minutes - minute_start,
@@ -47,7 +54,7 @@ debate[1,5] <- 0
 
 
 
-```{r fig.width=30}
+```{r echo=FALSE, fig.width=30}
 biden_col <- '#118ab2'
 trump_col <- '#ef476f'
 wallace_col <- '#ffd166'
@@ -281,6 +288,8 @@ p1 <- debate %>%
   )
 p1
 ```
+
+
 
 
 
