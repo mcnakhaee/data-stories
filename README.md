@@ -3,6 +3,8 @@
 
 ### US First Presidential Debate
 
+I looked at the first US Presidential debate between Joe Biden and Donald Trump to see how chaotic and wild it was.
+
 <p align="center">
 <img src="https://github.com/mcnakhaee/data-stories/blob/master/US%20Presidential%20Debates/00000f.png" width="900" height = "500">
 
@@ -11,7 +13,7 @@
 
 ### Reactions to Mark Rutte's Press Conference on September 29th 
 
-
+After a sharp rise in the number of new Covid-19 cases in the Netherlands, the Dutch Prime Minister, Mark Rutte, gave a press conference where he announced new measures. I collected several thousand tweets from Twitter to analyze how people reacted to his press conference and new restrictions. 
 
 <p align="center">
 <img src="https://github.com/mcnakhaee/data-stories/blob/master/Rutte's%20Corona%20Press%20Conference/0.jpg" width="500" height = "800">
