@@ -21,7 +21,8 @@ After a sharp rise in the number of new Covid-19 cases in the Netherlands, the D
 </p>
 
 ### Programmers's Survey 2019 in Iran
-
+Every year, jadi.net conducts a survey for Iranian programmers and system administrators. I combined these surveys together and looked at them from different angles.
+I wrote a blogpost(in Persian) about my analysis
 <p align="center">
 <img src="https://github.com/mcnakhaee/data-stories/blob/master/Programmer%20Survey%2094-98/plots/salary_exp.png?raw=true" width="500" height = "500">
 
