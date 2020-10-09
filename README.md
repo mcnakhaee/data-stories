@@ -1,6 +1,13 @@
 # Data Stories
 
+### Where Are the Canals in the Netherlands?
 
+I looked at places in the Netherlands with the word gracht (canal in Dutch) in their names and plotted them to see where the famous Dutch canals are located. Based on my own experience, I think this plot perfectly sums up where the Netherlands' fun and cool places are!
+
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Dutch%20Roads%20and%20Places/gracht_map_netherlands_3.png" width="500" height = "600">
+
+</p>
 ### US First Presidential Debate
 
 I looked at the first US Presidential debate between Joe Biden and Donald Trump to see how chaotic and wild it was.
