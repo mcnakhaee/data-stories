@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+library(ggtext)
+library(ggthemes)
+library(ggrepel)
+library(foreign)
+```
+
+```{r}
+roads_import <- read_sf("C:/datasets/netherlands-latest-free.shp/gis_osm_roads_free_1.shp")
+
+places_import <- read_sf('C:/datasets/netherlands-latest-free.shp/gis_osm_places_free_1.shp')
+```
+
+```{r}
+roads_import <- roads_import %>%
+  mutate(
+    is_gracht = str_detect(name, 'gracht'),
+    is_gracht = if_else(is.na(is_gracht), FALSE, is_gracht)
+  )
+
+gracht_roads <- roads_import %>% filter(is_gracht)  %>%
+  st_coordinates() %>%
+  as_tibble()
+
+gracht_roads %>%
+  distinct_all() %>%
+  dim()
+
+cities <-
+  c(
+    'Enschede',
+    'Utrecht',
+    'Amsterdam',
+    'Groningen',
+    'Den Haag',
+    'Rotterdam',
+    'Eindhoven',
+    'Maastricht',
+    'Nijmegen',
+    'Tilburg'
+  )
+places_import_selected_cities <- places_import %>%
+  mutate(top_cities = if_else(name %in% cities, name, 'Other'))
+
+
+places_import_selected_cities_in <-
+  places_import_selected_cities %>%
+  st_coordinates() %>%
+  as_tibble() %>%
+  bind_cols(places_import_selected_cities)
+```
+
+```{r}
+top_cities_df <- places_import_selected_cities_in %>%
+  filter(top_cities != 'Other') %>%
+  arrange(desc(population)) %>%
+  add_rownames() %>%
+  mutate(rowname = as.integer(rowname)) %>%
+  mutate(rank = seq(53.46, 52.41, length.out = 10))
+```
+
+```{r}
+
+p <- ggplot() +
+  
+  geom_point(
+    data = places_import_selected_cities_in,
+    aes(x = X, y = Y),
+    size = 6,
+    color = 'gray60',
+    alpha = 0.3
+  ) +
+  
+  geom_jitter(
+    data = gracht_roads,
+    aes(x = X, y = Y),
+    size = 3.5,
+    color = '#e63946',
+    alpha = 0.1,
+    width = 0.01,
+    height = 0.01
+  ) +
+  geom_text_repel(
+    data = top_cities_df,
+    aes(x = X, y = Y, label = rowname),
+    size = 6,
+    color = 'gray10',
+    alpha = 0.9
+  ) +
+  
+  geom_text(
+    data = top_cities_df,
+    aes(
+      x = 3.0,
+      y = rank,
+      label = paste(rowname, name, sep = '. ')
+    ),
+    size = 5,
+    color = 'gray15',
+    alpha = 0.9,
+    hjust = 0
+  ) +
+  scale_x_continuous(limits = c(3, 8.2)) +
+  
+  theme_void() +
+  labs(title = "Where to Look for <span style='color:#e63946'>**Canals**</span> in the Netherlands",
+       subtitle = "This plot shows 2515 places in the Netherlands that have the word <span style='color:#e63946'>\"gracht\"</span> (canal in Dutch) in their names.",
+       caption = 'visualization: mcnakhaee.com') +
+  theme(
+    legend.position = 'none',
+    plot.title = element_markdown(
+      hjust = 0,
+      family = 'Montserrat',
+      size = 20,
+      margin = margin(l = 15, t = 20)
+    ),
+    plot.subtitle = element_markdown(
+      hjust = 0,
+      family = 'Montserrat',
+      size = 15,
+      margin = margin(l = 15 , b = 10, t = 15)
+    ),
+    plot.caption = element_markdown(
+      family = 'Montserrat',
+      size = 12,
+      margin = margin(b = 10, t = 10, r = 10)
+    ),
+    plot.background =  element_rect(fill = 'gray15'
+    )
+        )
+```
+
+```{r}
+ggsave('gracht_map_netherlands_3.png',p,width = 14,height = 16)
+```
