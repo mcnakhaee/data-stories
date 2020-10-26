@@ -1,5 +1,12 @@
 # Data Stories
 
+### The Second Wave of Covid-19 in the Netherlands
+
+<p align="center">
+<img src="https://github.com/mcnakhaee/data-stories/blob/master/Corona%20in%20The%20Netherlands/animation.gif?raw=true" width="500" height = "600">
+
+</p>
+
 ### Where Are the Canals in the Netherlands?
 
 I looked at places in the Netherlands with the word gracht (canal in Dutch) in their names and plotted them to see where the famous Dutch canals are located. Based on my own experience, I think this plot perfectly sums up where the Netherlands' fun and cool places are!
