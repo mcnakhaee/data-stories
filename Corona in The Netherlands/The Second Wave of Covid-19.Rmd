@@ -1,0 +1,116 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  eval = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  comment = "#>"
+)
+
+
+myFont <- "Poppins Light"
+windowsFonts(`Poppins Light`  = myFont)
+```
+
+```{r setup}
+library(CoronaWatchNL)
+library(sf)
+library(gganimate)
+library(tidyverse)
+library(ggthemes)
+library(santoku)
+library(foreign)
+library(cbsodataR)
+
+
+municipalBoundaries <-
+  st_read(
+    "https://geodata.nationaalgeoregister.nl/cbsgebiedsindelingen/wfs?request=GetFeature&service=WFS&version=2.0.0&typeName=cbs_gemeente_2020_gegeneraliseerd&outputFormat=json"
+  )
+
+```
+
+```{r}
+
+daily_cases_per_municpality <- get_daily_cases_per_municpality()
+populatuon_per_region <- get_populatuon_per_region()
+
+daily_cases_per_municpality <- daily_cases_per_municpality %>%
+  inner_join(populatuon_per_region, by = c('Municipality_name' = 'Regions')) %>%
+  mutate(
+    Date_of_publication = lubridate::as_date(Date_of_publication),
+    day = lubridate::round_date(Date_of_publication , unit = 'day'),
+    day = lubridate::as_date(day),
+    avg = 100000 * as.numeric(Total_reported) / as.numeric(`Bevolking op 1 januari (aantal)`),
+    dis_avg = chop(avg, c(0, 0, 0.5, 1, 5, 12, 20, 35, 55, 80, 100, 200)),
+    day_char_ = as.character(day)
+  )
+
+
+```
+
+```{r}
+daily_cases_per_municpality <- daily_cases_per_municpality %>%
+  mutate(day_char_ = as.character(day))
+data <- municipalBoundaries %>%
+  right_join(daily_cases_per_municpality ,
+             by = c(statnaam = "Municipality_name"))
+
+
+```
+
+
+```{r fig.height=20,fig.width=10}
+data %>%
+  ggplot() +
+  geom_sf(aes(fill = dis_avg), color = 'gray95') +
+  scale_fill_manual(
+    values  = c(
+      'gray95',
+      '#fee440',
+      '#FFBA08',
+      '#FAA307',
+      '#F48C06',
+      '#E85D04',
+      '#DC2F02',
+      '#D00000',
+      '#9D0208',
+      '#6A040F',
+      '#370617',
+      '#03071e'
+    )
+  ) +
+  coord_sf(datum = NA) +
+  labs(
+    title = 'Covid-19 Cases per 100000 Inhabitants in the Netherlands',
+    subtitle = 'Date: {current_frame}',
+    fill = 'Counts per 100000',
+    caption = 'Source: RIVM'
+  ) +
+  theme_void() +
+  theme(
+    text = element_text(family = 'Poppins Light'),
+    plot.subtitle = element_text(
+      family = 'Poppins Light',
+      size = 13,
+      margin = margin(b = 10)
+    ) ,
+    plot.title = element_text(
+      family = 'Poppins Light',
+      size = 15,
+      margin = margin(t = 10, b = 10)
+    )
+  ) +
+  transition_manual(day_char_, cumulative = T) +
+  ease_aes("sine") +
+  enter_fade(alpha = 0.5) +
+  exit_fade(alpha = 0.5)
+
+
+
+```
